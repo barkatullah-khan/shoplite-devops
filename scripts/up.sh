@@ -178,6 +178,8 @@ remove_container inventory
 docker run -d \
     --name inventory \
     --network backend-net \
+    --env-file "$ENV_FILE" \
+    -e DB_HOST=postgres \
     --restart unless-stopped \
     shop-inventory:1.0.0
 
