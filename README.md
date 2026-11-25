@@ -44,12 +44,14 @@ ShopLite consists of:
 Implemented an automated CI/CD workflow using GitHub Actions.
 
 **Continuous Integration (CI):**
+
 1. Triggered by code pushes to the `main` branch.
 2. Builds Docker images for all four application services.
 3. Tags images with the release version and Git commit SHA.
 4. Pushes images to Amazon ECR.
 
 **Continuous Deployment (CD):**
+
 1. Establishes an SSH connection to the EC2 instance.
 2. Executes the deployment script.
 3. Pulls updated images from Amazon ECR.
@@ -75,5 +77,6 @@ This project provided practical experience in Linux administration, Docker, cont
 
 ---
 
-**Project:** ShopLite  
+**Project:** ShopLite
+
 **Repository:** [shoplite-devops](https://github.com/barkatullah-khan/shoplite-devops)
