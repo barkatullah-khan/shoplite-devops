@@ -9,3 +9,4 @@ A simple online shopping project.
 
 ## Team
 - Team Lead: Awais
+- Team mate: Barkat Ullah
