@@ -1,0 +1,74 @@
+name: ShopLite CI - Build and Push Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-southeast-2
+      ECR_REGISTRY: 106360388194.dkr.ecr.ap-southeast-2.amazonaws.com
+      IMAGE_TAG: 1.0.0
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Frontend
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/shop-frontend:$IMAGE_TAG \
+            -t $ECR_REGISTRY/shop-frontend:$GITHUB_SHA \
+            ./frontend
+
+          docker push $ECR_REGISTRY/shop-frontend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/shop-frontend:$GITHUB_SHA
+
+      - name: Build and Push Catalog
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/shop-catalog:$IMAGE_TAG \
+            -t $ECR_REGISTRY/shop-catalog:$GITHUB_SHA \
+            ./catalog-service
+
+          docker push $ECR_REGISTRY/shop-catalog:$IMAGE_TAG
+          docker push $ECR_REGISTRY/shop-catalog:$GITHUB_SHA
+
+      - name: Build and Push Inventory
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/shop-inventory:$IMAGE_TAG \
+            -t $ECR_REGISTRY/shop-inventory:$GITHUB_SHA \
+            ./inventory-service
+
+          docker push $ECR_REGISTRY/shop-inventory:$IMAGE_TAG
+          docker push $ECR_REGISTRY/shop-inventory:$GITHUB_SHA
+
+      - name: Build and Push Orders
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/shop-orders:$IMAGE_TAG \
+            -t $ECR_REGISTRY/shop-orders:$GITHUB_SHA \
+            ./order-service
+
+          docker push $ECR_REGISTRY/shop-orders:$IMAGE_TAG
+          docker push $ECR_REGISTRY/shop-orders:$GITHUB_SHA
