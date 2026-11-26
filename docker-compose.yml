@@ -1,0 +1,108 @@
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+
+    env_file:
+      - /opt/shoplite/.env
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - /opt/shoplite/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+    networks:
+      - backend-net
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Catalog Service
+  catalog:
+    image: 106360388194.dkr.ecr.ap-southeast-2.amazonaws.com/shop-catalog:1.0.0
+    container_name: catalog
+    restart: unless-stopped
+
+    env_file:
+      - /opt/shoplite/.env
+
+    networks:
+      - backend-net
+      - frontend-net
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Inventory Service
+  inventory:
+    image: 106360388194.dkr.ecr.ap-southeast-2.amazonaws.com/shop-inventory:1.0.0
+    container_name: inventory
+    restart: unless-stopped
+
+    env_file:
+      - /opt/shoplite/.env
+
+    environment:
+      DB_HOST: postgres
+
+    networks:
+      - backend-net
+      - frontend-net
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Orders Service
+  orders:
+    image: 106360388194.dkr.ecr.ap-southeast-2.amazonaws.com/shop-orders:1.0.0
+    container_name: orders
+    restart: unless-stopped
+
+    env_file:
+      - /opt/shoplite/.env
+
+    networks:
+      - backend-net
+      - frontend-net
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Frontend
+  frontend:
+    image: 106360388194.dkr.ecr.ap-southeast-2.amazonaws.com/shop-frontend:1.0.0
+    container_name: frontend
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    networks:
+      - frontend-net
+
+# Existing Docker Networks
+networks:
+  frontend-net:
+    external: true
+    name: frontend-net
+
+  backend-net:
+    external: true
+    name: backend-net
+
+# Existing Persistent Database Volume
+volumes:
+  pgdata:
+    external: true
+    name: pgdata
