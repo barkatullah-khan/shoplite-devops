@@ -1,3 +1,4 @@
+
 name: ShopLite CI - Build and Push Images
 
 on:
@@ -73,7 +74,7 @@ jobs:
           docker push $ECR_REGISTRY/shop-orders:$IMAGE_TAG
           docker push $ECR_REGISTRY/shop-orders:$GITHUB_SHA
 
-      - name: Deploy to EC2 using SSH
+      - name: Deploy to EC2 using Docker Compose
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
@@ -84,7 +85,30 @@ jobs:
 
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
+          # Copy Compose configuration to EC2
+          scp -i ~/.ssh/shoplite_key \
+            -o StrictHostKeyChecking=yes \
+            docker-compose.yml \
+            ubuntu@"$EC2_HOST":/opt/shoplite/docker-compose.yml
+
+          # Deploy using Docker Compose on EC2
           ssh -i ~/.ssh/shoplite_key \
             -o StrictHostKeyChecking=yes \
-            ubuntu@"$EC2_HOST" \
-            'bash /opt/shoplite/deploy.sh'
+            ubuntu@"$EC2_HOST" '
+              set -e
+
+              cd /opt/shoplite
+
+              aws ecr get-login-password --region ap-southeast-2 |
+                docker login --username AWS --password-stdin \
+                106360388194.dkr.ecr.ap-southeast-2.amazonaws.com
+
+              docker compose pull
+
+              # Remove containers created by the old deployment script
+              docker rm -f frontend catalog inventory orders postgres \
+                2>/dev/null || true
+
+              # Start services using Docker Compose
+              docker compose up -d
+            '
